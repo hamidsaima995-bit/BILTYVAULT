@@ -33,8 +33,17 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 const PORT    = parseInt(process.env.PORT) || 3000;
 
 // ── PostgreSQL Pool ───────────────────────────────────────────
+// Expected format: postgresql://user:password@host:port/database
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl.startsWith('postgres://') && !dbUrl.startsWith('postgresql://')) {
+  console.error('\n❌  DATABASE_URL is invalid.');
+  console.error(`    Received: "${dbUrl}"`);
+  console.error('    Expected format: postgresql://user:password@host:port/database\n');
+  process.exit(1);
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl,
   ssl: IS_PROD ? { rejectUnauthorized: false } : false,
   max:             20,    // max 20 concurrent connections
   idleTimeoutMillis: 30000,
