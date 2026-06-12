@@ -1,5 +1,9 @@
 'use strict';
-require('dotenv').config();
+// Only load .env in development — in production (Railway), env vars are
+// injected directly and a local .env file must never override them.
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
 // ════════════════════════════════════════════════════════════════
 //  BiltyTrack v3.0 — Production Server
