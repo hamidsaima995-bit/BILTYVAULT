@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <meta name="theme-color" content="#060608"/>
+<meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>BiltyVault</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -11,9 +12,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 /* ══════════════════════════════════════
-   BiltyVault v1.1 — Fixed & Production Ready
+   BiltyVault v1.2 — Camera Fixed
    Endpoint: /api/bilty
-   Save button: ALWAYS enabled
+   FIX: drop zone had two id attributes, so the
+        click listener never attached. Now one id.
 ══════════════════════════════════════ */
 :root{
   --bg:#060608; --bg2:#0c0c10; --panel:#111116; --panel2:#17171e;
@@ -96,11 +98,13 @@ main{max-width:1100px;margin:0 auto;padding:20px 16px 80px;position:relative;z-i
 /* ── Drop zone ── */
 .drop-zone{border:1.5px dashed var(--border2);border-radius:4px;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center;padding:20px 16px;transition:border-color .2s,background .2s;}
 .drop-zone:hover{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.02);}
+.drop-zone:active{border-color:var(--amber);background:rgba(245,158,11,.05);}
 .drop-icon{font-size:2.4rem;opacity:.45;}
 .drop-title{font-family:var(--cond);font-size:.95rem;font-weight:600;color:var(--text);letter-spacing:.06em;}
 .drop-hint{font-size:.75rem;color:var(--sub);line-height:1.6;}
 .drop-hint strong{color:var(--amber);}
 .drop-fmt{font-family:var(--mono);font-size:.56rem;color:var(--muted);margin-top:6px;}
+.source-btns{display:flex;gap:8px;margin-top:14px;}
 #previewWrap{display:none;}
 #previewImg{width:100%;max-height:220px;object-fit:contain;border-radius:4px;border:1px solid var(--border2);background:var(--bg);}
 .preview-meta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.6rem;color:var(--sub);margin-top:8px;padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:3px;}
@@ -234,12 +238,11 @@ td{padding:10px 14px;font-size:.8rem;vertical-align:middle;}
     <div class="login-body">
       <label class="lbl" for="pwdInput">🔐 Password</label>
       <input class="login-input" type="password" id="pwdInput"
-             placeholder="Password daalen" autocomplete="current-password"
-             />
+             placeholder="Password daalen" autocomplete="current-password"/>
       <p class="login-err" id="loginErr"></p>
       <button class="login-btn" id="btnLogin">ENTER SYSTEM</button>
     </div>
-    <div class="login-footer">BiltyVault v1.1 · PostgreSQL · Authorized Users Only</div>
+    <div class="login-footer">BiltyVault v1.2 · PostgreSQL · Authorized Users Only</div>
   </div>
 </div>
 
@@ -252,7 +255,7 @@ td{padding:10px 14px;font-size:.8rem;vertical-align:middle;}
         <div class="logo-mark">📦</div>
         <div>
           <div class="logo-name">Bilty<span>Vault</span></div>
-          <div class="logo-tag">Logistics Terminal v1.1</div>
+          <div class="logo-tag">Logistics Terminal v1.2</div>
         </div>
       </div>
       <div class="hright">
@@ -297,15 +300,25 @@ td{padding:10px 14px;font-size:.8rem;vertical-align:middle;}
             <span class="card-label">Image Upload</span>
           </div>
           <div class="card-body">
-            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp"
-                   style="display:none" onchange="onFileChosen(event)"/>
-            <div class="drop-zone" id="dropZone"
-                 id="fileZone">
-              <div class="drop-icon">🗂️</div>
-              <div class="drop-title">Bilty ki Photo Upload Karein</div>
-              <div class="drop-hint">Ya <strong>tap karein</strong> — camera / gallery se chunein</div>
-              <div class="drop-fmt">JPG · PNG · WEBP · max 10MB</div>
+
+            <!-- Gallery picker -->
+            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" style="display:none"/>
+            <!-- Camera picker (opens the rear camera directly on mobile) -->
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none"/>
+
+            <div id="pickWrap">
+              <div class="drop-zone" id="dropZone">
+                <div class="drop-icon">🗂️</div>
+                <div class="drop-title">Bilty ki Photo Upload Karein</div>
+                <div class="drop-hint">Ya <strong>tap karein</strong> — gallery se chunein</div>
+                <div class="drop-fmt">JPG · PNG · WEBP · max 10MB</div>
+              </div>
+              <div class="source-btns">
+                <button class="btn btn-amber" id="btnCamera" style="flex:1">📷 Camera</button>
+                <button class="btn btn-outline" id="btnGallery" style="flex:1">🖼️ Gallery</button>
+              </div>
             </div>
+
             <div id="previewWrap">
               <img id="previewImg" src="" alt="Preview"/>
               <div class="preview-meta">
@@ -353,7 +366,6 @@ td{padding:10px 14px;font-size:.8rem;vertical-align:middle;}
               </div>
             </div>
             <div class="form-err" id="formErr"></div>
-            <!-- ✅ FIX: Button always enabled — no disabled attribute -->
             <button class="btn btn-amber btn-full" id="saveBtn">
               💾 DATABASE MEIN SAVE KAREIN
             </button>
@@ -397,7 +409,6 @@ td{padding:10px 14px;font-size:.8rem;vertical-align:middle;}
             </div>
           </div>
           <div class="form-err" id="mFormErr"></div>
-          <!-- ✅ Always enabled -->
           <button class="btn btn-amber btn-full" id="mSaveBtn">
             💾 SAVE KAREIN
           </button>
@@ -410,7 +421,7 @@ td{padding:10px 14px;font-size:.8rem;vertical-align:middle;}
       <div class="toolbar">
         <div class="search-wrap">
           <svg class="search-ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="searchQ" placeholder="Bilty no, sheher, status..." oninput="onSearch()"/>
+          <input type="text" id="searchQ" placeholder="Bilty no, sheher, status..."/>
         </div>
         <div class="filter-row">
           <button class="fpill active" data-filter="all">All</button>
@@ -442,20 +453,21 @@ td{padding:10px 14px;font-size:.8rem;vertical-align:middle;}
 
 <script>
 // ════════════════════════════════════════════════════════
-//  BiltyVault v1.1 — Fixed Frontend
+//  BiltyVault v1.2 — Frontend
 //
-//  BUGS FIXED:
-//  1. Save button ALWAYS enabled — no disabled, no prerequisites
-//  2. API endpoint: /api/bilty (correct for this server)
-//  3. All errors shown as visible toasts + form messages
-//  4. Manual Entry tab added — dedicated form, always works
-//  5. All speech APIs safely guarded — no crashes
+//  FIXED IN THIS VERSION:
+//  The drop zone element carried two id attributes
+//  (id="dropZone" id="fileZone"). HTML keeps only the
+//  first, so getElementById('fileZone') returned null and
+//  the click listener was never attached — the button
+//  looked dead with no console error.
+//  Now: one id, plus separate Camera and Gallery buttons.
 // ════════════════════════════════════════════════════════
 'use strict';
 
 let curFilter = 'all', selFile = null, allRecs = [], toastT = null, srchT = null;
 
-// ── EVENT BINDINGS (CSP-proof, replaces inline onclick) ───────
+// ── EVENT BINDINGS ────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function(){
   const bind = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener('click', fn); };
 
@@ -467,9 +479,20 @@ document.addEventListener('DOMContentLoaded', function(){
   bind('mSaveBtn', saveManual);
   bind('btnReload', loadRecords);
 
-  // File upload zone
-  const fz = document.getElementById('fileZone');
-  if(fz) fz.addEventListener('click', () => document.getElementById('fileInput').click());
+  // ✅ Drop zone and pickers
+  const fileInput   = document.getElementById('fileInput');
+  const cameraInput = document.getElementById('cameraInput');
+
+  bind('dropZone',   () => fileInput.click());
+  bind('btnGallery', (e) => { e.stopPropagation(); fileInput.click(); });
+  bind('btnCamera',  (e) => { e.stopPropagation(); cameraInput.click(); });
+
+  if(fileInput)   fileInput.addEventListener('change', onFileChosen);
+  if(cameraInput) cameraInput.addEventListener('change', onFileChosen);
+
+  // Search
+  const sq = document.getElementById('searchQ');
+  if(sq) sq.addEventListener('input', onSearch);
 
   // Tabs
   document.querySelectorAll('[data-tab]').forEach(b =>
@@ -479,10 +502,14 @@ document.addEventListener('DOMContentLoaded', function(){
   document.querySelectorAll('[data-filter]').forEach(b =>
     b.addEventListener('click', () => setFilter(b.getAttribute('data-filter'), b)));
 
-  // Dynamic delete buttons (event delegation — works for rows added later)
+  // Dynamic rows — delete and status
   document.body.addEventListener('click', function(e){
     const d = e.target.closest('.btn-del-row');
-    if(d){ delRecord(d.getAttribute('data-id')); }
+    if(d){ delRecord(parseInt(d.getAttribute('data-id'))); }
+  });
+  document.body.addEventListener('change', function(e){
+    const s = e.target.closest('.status-sel');
+    if(s && s.hasAttribute('data-id')){ updStatus(parseInt(s.getAttribute('data-id')), s.value); }
   });
 
   // Enter key on password
@@ -556,13 +583,18 @@ function animN(id,target){
 }
 
 // ── FILE HANDLING ─────────────────────────────────────────────
-function onFileChosen(e){ const f=e.target.files?.[0]; if(f) showPreview(f); }
+function onFileChosen(e){
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  if(f.size > 10*1024*1024){ toast('File 10MB se bari hai','err',4000); e.target.value=''; return; }
+  showPreview(f);
+}
 function showPreview(file){
   selFile=file; clearAIFields();
   const reader=new FileReader();
   reader.onload=ev=>{document.getElementById('previewImg').src=ev.target.result;};
   reader.readAsDataURL(file);
-  document.getElementById('dropZone').style.display='none';
+  document.getElementById('pickWrap').style.display='none';
   document.getElementById('previewWrap').style.display='block';
   document.getElementById('pName').textContent=file.name.length>22?file.name.slice(0,22)+'…':file.name;
   document.getElementById('pSize').textContent=fmtB(file.size);
@@ -571,7 +603,8 @@ function showPreview(file){
 function clearFile(){
   selFile=null;
   document.getElementById('fileInput').value='';
-  document.getElementById('dropZone').style.display='';
+  document.getElementById('cameraInput').value='';
+  document.getElementById('pickWrap').style.display='';
   document.getElementById('previewWrap').style.display='none';
   document.getElementById('previewImg').src='';
   clearAIFields(); setSt('Image select karein...','');
@@ -629,7 +662,6 @@ async function saveBilty(){
   const de=document.getElementById('fDest').value.trim();
   const wt=document.getElementById('fWeight').value.trim();
   const st=document.getElementById('fStatus').value;
-  // ✅ FIX: Show visible error — not silent fail
   if(!bn){
     showErr('formErr','⚠ Bilty Number zaroori hai! Likhein ya AI se extract karein.');
     document.getElementById('fBilty').classList.add('err-field');
@@ -663,7 +695,6 @@ async function saveToAPI(data,btnId,errId,onSuccess){
   btn.disabled=true;
   btn.innerHTML='<span class="spin"></span> Saving...';
   try{
-    // ✅ FIX: Correct API endpoint /api/bilty
     const r=await fetch('/api/bilty',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
     if(r.status===401){ handle401(); return; }
     const j=await r.json();
@@ -673,7 +704,6 @@ async function saveToAPI(data,btnId,errId,onSuccess){
       loadStats(); loadRecords();
       setTimeout(()=>switchTab('records'),800);
     } else {
-      // ✅ FIX: Show the actual error message
       showErr(errId,'✗ Save fail: '+(j.message||'Server error. Dobara try karein.'));
       toast('Save fail: '+(j.message||'Error'),'err',5000);
     }
@@ -687,7 +717,7 @@ async function saveToAPI(data,btnId,errId,onSuccess){
 
 // ── RECORDS ───────────────────────────────────────────────────
 async function loadRecords(){
-  const q=document.getElementById('searchQ')?.value.trim()||'';
+  const q=document.getElementById('searchQ')?document.getElementById('searchQ').value.trim():'';
   try{
     const r=await fetch('/api/bilty'+(q?'?q='+encodeURIComponent(q):''));
     if(r.status===401){ handle401(); return; }
@@ -705,7 +735,8 @@ async function loadRecords(){
   }
 }
 function filtered(){
-  const q=(document.getElementById('searchQ')?.value||'').trim().toLowerCase();
+  const el=document.getElementById('searchQ');
+  const q=(el?el.value:'').trim().toLowerCase();
   let rows=curFilter==='all'?allRecs:allRecs.filter(r=>r.status===curFilter);
   if(q) rows=rows.filter(r=>(r.bilty_number+''+r.destination+''+r.status).toLowerCase().includes(q));
   return rows;
@@ -722,29 +753,29 @@ function render(){
     tBody.innerHTML='<tr><td colspan="8">'+e+'</td></tr>'; mobs.innerHTML=e; return;
   }
   tBody.innerHTML=rows.map((r,i)=>`
-    <tr class="fade-up" style="animation-delay:${Math.min(i,.12)*.04}s">
+    <tr class="fade-up" style="animation-delay:${Math.min(i,12)*.04}s">
       <td style="color:var(--muted);font-family:var(--mono);font-size:.62rem">${r.id}</td>
       <td><span class="bilty-no">${esc(r.bilty_number)}</span></td>
       <td><span class="dest-v">${esc(r.destination||'—')}</span></td>
       <td><span class="wt-v">${esc(r.weight||'—')}</span></td>
-      <td><span class="src-badge ${r.source==='ai'?'src-ai':'src-manual'}">${r.source}</span></td>
-      <td><select class="status-sel" onchange="updStatus(${r.id},this.value)">${sOpts(r.status)}</select></td>
+      <td><span class="src-badge ${r.source==='ai'?'src-ai':'src-manual'}">${esc(r.source)}</span></td>
+      <td><select class="status-sel" data-id="${r.id}">${sOpts(r.status)}</select></td>
       <td><span class="date-v">${fmtD(r.created_at)}</span></td>
       <td><button class="btn btn-del btn-del-row" data-id="${r.id}">✕</button></td>
     </tr>`).join('');
   mobs.innerHTML=rows.map((r,i)=>`
-    <div class="mob fade-up" style="animation-delay:${Math.min(i,.12)*.05}s">
+    <div class="mob fade-up" style="animation-delay:${Math.min(i,12)*.05}s">
       <div class="mob-top">
         <span class="mob-bilty">${esc(r.bilty_number)}</span>
-        <span class="badge ${bCls(r.status)}">${r.status}</span>
+        <span class="badge ${bCls(r.status)}">${esc(r.status)}</span>
       </div>
       <div class="mob-row"><span class="mob-k">Destination</span><span class="mob-v">${esc(r.destination||'—')}</span></div>
       <div class="mob-row"><span class="mob-k">Weight</span><span class="mob-v" style="color:var(--sub)">${esc(r.weight||'—')}</span></div>
-      <div class="mob-row"><span class="mob-k">Source</span><span class="src-badge ${r.source==='ai'?'src-ai':'src-manual'}">${r.source}</span></div>
+      <div class="mob-row"><span class="mob-k">Source</span><span class="src-badge ${r.source==='ai'?'src-ai':'src-manual'}">${esc(r.source)}</span></div>
       <div class="mob-foot">
         <span class="date-v">${fmtD(r.created_at)}</span>
         <div style="display:flex;gap:6px;align-items:center">
-          <select class="status-sel" onchange="updStatus(${r.id},this.value)">${sOpts(r.status)}</select>
+          <select class="status-sel" data-id="${r.id}">${sOpts(r.status)}</select>
           <button class="btn btn-del btn-del-row" data-id="${r.id}" style="padding:4px 8px">Del</button>
         </div>
       </div>
@@ -776,13 +807,10 @@ function showErr(id,msg){ const e=document.getElementById(id); e.textContent=msg
 function hideErr(id){ document.getElementById(id).classList.remove('show'); }
 function sOpts(c){ return[['pending','Pending'],['in-transit','In Transit'],['delivered','Delivered'],['cancelled','Cancelled']].map(([v,l])=>`<option value="${v}"${v===c?' selected':''}>${l}</option>`).join(''); }
 function bCls(s){ return{'pending':'b-pending','in-transit':'b-in-transit','delivered':'b-delivered','cancelled':'b-cancelled'}[s]||'b-pending'; }
-function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtD(s){ if(!s)return'—'; const d=new Date(s); if(isNaN(d))return s; return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(-2)+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 function fmtB(b){ if(b<1024)return b+' B'; if(b<1048576)return(b/1024).toFixed(1)+' KB'; return(b/1048576).toFixed(1)+' MB'; }
 function toast(m,t='ok',d=3000){ const el=document.getElementById('toast'); el.textContent=m; el.className='show '+t; clearTimeout(toastT); toastT=setTimeout(()=>el.className='',d); }
-
-// checkAuth() now runs inside DOMContentLoaded above
 </script>
 </body>
 </html>
-
