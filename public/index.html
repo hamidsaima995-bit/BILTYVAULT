@@ -50,6 +50,10 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .login-btn:hover{background:#fbbf24;box-shadow:0 4px 32px rgba(245,158,11,.4);}
 .login-btn:active{transform:scale(.98);}
 .login-footer{font-family:var(--mono);font-size:.56rem;color:var(--muted);text-align:center;padding:14px 28px;border-top:1px solid var(--border);letter-spacing:.08em;}
+.demo-note{font-family:var(--mono);font-size:.68rem;color:var(--amber);text-align:center;
+  padding:11px 20px;margin:0 28px 4px;background:var(--amber-g);
+  border:1px solid rgba(245,158,11,.28);border-radius:4px;letter-spacing:.06em;}
+.demo-note b{color:#fbbf24;font-size:.8rem;letter-spacing:.14em;}
 
 /* ── APP ── */
 #appScreen{display:none;}
@@ -242,7 +246,10 @@ td{padding:10px 14px;font-size:.8rem;vertical-align:middle;}
       <p class="login-err" id="loginErr"></p>
       <button class="login-btn" id="btnLogin">ENTER SYSTEM</button>
     </div>
-    <div class="login-footer">BiltyVault v1.2 · PostgreSQL · Authorized Users Only</div>
+    <div class="demo-note">
+      🔓 Demo Access — Password: <b>demo123</b>
+    </div>
+    <div class="login-footer">BiltyVault v1.2 · PostgreSQL · Portfolio Demo</div>
   </div>
 </div>
 
