@@ -2,8 +2,14 @@
 require('dotenv').config();
 
 // ════════════════════════════════════════════════════════════════
-//  BiltyTrack v3.0 — Production Server
+//  BiltyTrack v3.1 — Production Server
 //  100+ users ready · PostgreSQL · Gemini AI · Auth · Security
+//
+//  CHANGED IN v3.1:
+//  HTML was being cached for 2 hours (maxAge: '2h'), so browsers
+//  kept serving the old page after every deploy and hard refresh
+//  did nothing. HTML is now always revalidated; CSS/JS/images
+//  still cache normally.
 // ════════════════════════════════════════════════════════════════
 
 const express     = require('express');
@@ -166,14 +172,23 @@ const uploadMiddleware = (req, res, next) => {
 };
 
 // ── Static Files ──────────────────────────────────────────────
+// ✅ FIX: HTML is never cached, so a new deploy shows up immediately.
+//         Other assets (css, js, images) still cache for 2h in prod.
 app.use(express.static(path.join(__dirname, 'public'), {
   etag:   true,
-  maxAge: IS_PROD ? '2h' : 0
+  maxAge: IS_PROD ? '2h' : 0,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
 }));
 
 // ── Auth Middleware ───────────────────────────────────────────
 function requireAuth(req, res, next) {
-  if (req.session?.authenticated) return next();
+  if (req.session && req.session.authenticated) return next();
   res.status(401).json({ success: false, message: 'Login zaroori hai.' });
 }
 
@@ -208,7 +223,7 @@ app.post('/auth/logout', (req, res) => {
 
 // GET /auth/check
 app.get('/auth/check', (req, res) => {
-  res.json({ authenticated: !!req.session?.authenticated });
+  res.json({ authenticated: !!(req.session && req.session.authenticated) });
 });
 
 // ════════════════════════════════════════════════════════════════
@@ -259,19 +274,19 @@ If a field is not clearly visible, use empty string "".`,
     res.json({
       success: true,
       data: {
-        bilty_number: String(parsed.bilty_number ?? '').trim().slice(0, 100),
-        weight:       String(parsed.weight        ?? '').trim().slice(0, 50),
-        destination:  String(parsed.destination   ?? '').trim().slice(0, 100),
+        bilty_number: String(parsed.bilty_number == null ? '' : parsed.bilty_number).trim().slice(0, 100),
+        weight:       String(parsed.weight       == null ? '' : parsed.weight).trim().slice(0, 50),
+        destination:  String(parsed.destination  == null ? '' : parsed.destination).trim().slice(0, 100),
         status:       'pending'
       }
     });
 
   } catch (err) {
     console.error('[POST /api/extract]', err.message);
-    if (err.message?.includes('401') || err.message?.includes('API key')) {
+    if (err.message && (err.message.includes('401') || err.message.includes('API key'))) {
       return res.status(401).json({ success: false, message: 'Gemini API key galat hai.' });
     }
-    if (err.message?.includes('429')) {
+    if (err.message && err.message.includes('429')) {
       return res.status(429).json({ success: false, message: 'Gemini rate limit. Baad mein try karein.' });
     }
     if (err instanceof SyntaxError) {
@@ -285,7 +300,7 @@ If a field is not clearly visible, use empty string "".`,
 app.post('/api/bilty', requireAuth, async (req, res) => {
   const { bilty_number, weight, destination, status, source } = req.body;
 
-  if (!bilty_number?.trim()) {
+  if (!bilty_number || !bilty_number.trim()) {
     return res.status(400).json({ success: false, message: 'Bilty Number zaroori hai.' });
   }
 
@@ -301,8 +316,8 @@ app.post('/api/bilty', requireAuth, async (req, res) => {
        RETURNING *`,
       [
         bilty_number.trim().slice(0, 100),
-        String(weight      ?? '').trim().slice(0, 50),
-        String(destination ?? '').trim().slice(0, 100),
+        String(weight      == null ? '' : weight).trim().slice(0, 50),
+        String(destination == null ? '' : destination).trim().slice(0, 100),
         safeStatus,
         safeSource
       ]
@@ -316,7 +331,7 @@ app.post('/api/bilty', requireAuth, async (req, res) => {
 
 // GET /api/bilty — all records or search
 app.get('/api/bilty', requireAuth, async (req, res) => {
-  const q = req.query.q?.trim();
+  const q = req.query.q ? req.query.q.trim() : '';
   try {
     let result;
     if (q) {
@@ -344,10 +359,10 @@ app.get('/api/bilty', requireAuth, async (req, res) => {
 // PATCH /api/bilty/:id/status — update status
 app.patch('/api/bilty/:id/status', requireAuth, async (req, res) => {
   const id     = parseInt(req.params.id, 10);
-  const status = req.body?.status;
+  const status = req.body ? req.body.status : undefined;
   const valid  = ['pending', 'in-transit', 'delivered', 'cancelled'];
 
-  if (!Number.isFinite(id))   return res.status(400).json({ success: false, message: 'ID galat hai.' });
+  if (!Number.isFinite(id))    return res.status(400).json({ success: false, message: 'ID galat hai.' });
   if (!valid.includes(status)) return res.status(400).json({ success: false, message: 'Status galat hai.' });
 
   try {
@@ -412,7 +427,11 @@ app.get('/api/stats', requireAuth, async (req, res) => {
 });
 
 // Catch-all → serve index.html
+// ✅ FIX: no-cache headers here too, so deep links also get fresh HTML.
 app.get('*', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -436,11 +455,12 @@ process.on('unhandledRejection', err => { console.error('Unhandled:', err); });
 // ── Start ─────────────────────────────────────────────────────
 initDB().then(() => {
   app.listen(PORT, () => {
-    console.log(`\n🚀  BiltyVault v1.0`);
+    console.log(`\n🚀  BiltyVault v1.2`);
     console.log(`📡  http://localhost:${PORT}`);
     console.log(`🔐  Auth:     ✅ Password + Session`);
     console.log(`🛡️   Security: ✅ Helmet + Rate Limits`);
     console.log(`🗄️   Database: ✅ PostgreSQL (100+ users ready)`);
+    console.log(`📄  HTML:     ✅ No-cache (instant deploys)`);
     console.log(`🤖  Gemini:   ${process.env.GEMINI_API_KEY ? '✅ Connected' : '❌ No key'}\n`);
   });
 }).catch(err => {
