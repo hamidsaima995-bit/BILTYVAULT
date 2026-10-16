@@ -1,140 +1,51 @@
-# 🔐 BiltyVault v1.0
+# BiltyVault
 
-> AI-powered bilty management system for Pakistani logistics businesses — image scanning, real-time tracking, and multi-user access in one secure web app.
+An AI-powered logistics app for managing bilty documents. You snap or upload a bilty, and the app reads the details automatically with Google's Gemini vision model, then stores everything in a database so records are easy to search and keep.
 
----
+## Tech
 
-## ✨ Features
+- Node.js with Express
+- PostgreSQL (via `pg`)
+- Google Generative AI (Gemini) for reading bilty images
+- Session-based login, with Helmet and rate limiting for basic security
+- Multer for file uploads
 
-- 🔐 **Password Login** — secure shared access for your team
-- 📸 **AI Image Scanning** — Gemini AI reads bilty photos automatically
-- ✏️ **Manual Entry** — type data yourself when needed
-- 📊 **Live Dashboard** — total, pending, today's shipment count
-- 🔍 **Search & Filter** — by bilty number, city, status
-- 📱 **Mobile First** — works on phone, tablet, and desktop
-- 🗄️ **PostgreSQL** — handles 100+ concurrent users safely
-- 🛡️ **Production Secure** — Helmet, rate limiting, session auth
+## What is inside
 
----
+- `server.js`, the Express server and API
+- `public/`, the frontend
+- `.env.example`, a template for the environment variables
 
-## 🚀 Deploy on Railway (Free — 20 Minutes)
+## Configuration
 
-### Step 1 — Upload to GitHub
-Fork this repo or upload all files to your own GitHub repository.
+Copy `.env.example` to `.env` and fill in real values for local development. Do not commit `.env`.
 
-### Step 2 — Deploy on Railway
-1. Go to [railway.app](https://railway.app) and login with GitHub
-2. Click **New Project** → **Deploy from GitHub repo**
-3. Select your repository
+The variables are:
 
-### Step 3 — Add PostgreSQL Database
-In Railway dashboard → **+ New** → **Database** → **PostgreSQL**
-`DATABASE_URL` will be set automatically ✅
+- `DATABASE_URL`, the PostgreSQL connection string (Railway injects this automatically when a Postgres service is linked)
+- `SESSION_SECRET`, a strong random string used to sign session cookies
+- `APP_PASSWORD`, the password users enter to log in
+- `GEMINI_API_KEY`, the Google Generative AI key
+- `NODE_ENV`, set to `production` on the server
+- `PORT`, the port to listen on
 
-### Step 4 — Set Environment Variables
-In Railway → your app → **Variables** tab:
+## Running it locally
 
-| Variable | Value |
-|----------|-------|
-| `APP_PASSWORD` | your chosen password |
-| `SESSION_SECRET` | any random 40+ character string |
-| `GEMINI_API_KEY` | from aistudio.google.com (free) |
-| `NODE_ENV` | `production` |
-| `PORT` | `3000` |
+You need Node.js and a PostgreSQL database.
 
-### Step 5 — Done! 🎉
-Your live HTTPS URL will be ready. Share with your team.
-
----
-
-## 💻 Run Locally
-
-```bash
-# 1. Clone the repo
-git clone https://github.com/your-username/biltyvault.git
-cd biltyvault
-
-# 2. Install dependencies
+```
 npm install
-
-# 3. Create environment file
 cp .env.example .env
-# Open .env and fill in your values
-
-# 4. Start server
-node server.js
-
-# 5. Open in browser
-# http://localhost:3000
+# fill in .env, then:
+npm run dev
 ```
 
----
+`npm run dev` runs the server with nodemon so it restarts on changes. For a plain run, use `npm start`.
 
-## 📁 Project Structure
+## Deployment
 
-```
-biltyvault/
-├── server.js              ← Express backend (Auth, API, AI, DB)
-├── package.json           ← All dependencies
-├── ecosystem.config.js    ← PM2 production config
-├── .env.example           ← Copy this to .env
-├── .gitignore             ← Keeps secrets out of GitHub
-└── public/
-    └── index.html         ← Complete frontend (Login + App)
-```
+Deployed on Railway with a linked Postgres service. On Railway the environment variables are set in the dashboard, and `.env` is not used in production.
 
----
+## Author
 
-## 🔑 Get Your Free Gemini API Key
-
-1. Visit [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
-2. Click **Create API Key**
-3. Copy and paste into Railway Variables as `GEMINI_API_KEY`
-
-Free tier: ~1,500 requests/day — enough for 100 daily users.
-
----
-
-## 🛡️ Security
-
-| Protection | Detail |
-|-----------|--------|
-| Password Auth | Shared login for your team |
-| PostgreSQL Sessions | Server-side, 8hr expiry |
-| Session Regeneration | Prevents session fixation |
-| Login Rate Limit | 10 attempts per 15 minutes |
-| AI Rate Limit | 15 requests per minute |
-| General Rate Limit | 300 requests per 15 minutes |
-| Helmet.js | 12 HTTP security headers |
-| Parameterized Queries | No SQL injection possible |
-| Memory-only Uploads | Images never written to disk |
-
----
-
-## 📊 Capacity
-
-| Users | Status |
-|-------|--------|
-| 1 – 15 | ✅ Works perfectly |
-| 15 – 100 | ✅ Works perfectly |
-| 100 – 500 | ✅ Increase PM2 instances |
-
----
-
-## 🧰 Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Backend | Node.js + Express |
-| Database | PostgreSQL |
-| AI | Google Gemini 1.5 Flash |
-| Auth | express-session + connect-pg-simple |
-| Security | Helmet + express-rate-limit |
-| File Upload | Multer (memory only) |
-| Frontend | Vanilla HTML / CSS / JavaScript |
-
----
-
-## 📝 License
-
-MIT — free to use, modify, and deploy.
+Saima Hamid, Ninja Tech, Lahore. https://ninjatechdev.com
